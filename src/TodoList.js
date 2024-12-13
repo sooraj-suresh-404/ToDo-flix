@@ -7,10 +7,14 @@ function TodoList() {
     return savedTasks ? JSON.parse(savedTasks) : [];
   });
   const [newTask, setNewTask] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingText, setEditingText] = useState("");
 
   useEffect(() => {
     // Hide intro after 3.5 seconds
-    const timer = setTimeout(() => setShowIntro(false), 3500);
+    const timer = setTimeout(() => {
+      setShowIntro(false);
+    }, 3500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -27,7 +31,11 @@ function TodoList() {
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
-      addTask();
+      if (editingIndex !== null) {
+        saveEditedTask();
+      } else {
+        addTask();
+      }
     }
   };
 
@@ -43,6 +51,20 @@ function TodoList() {
     setTasks(updatedTasks);
   };
 
+  const startEditingTask = (index) => {
+    setEditingIndex(index);
+    setEditingText(tasks[index].text);
+  };
+
+  const saveEditedTask = () => {
+    const updatedTasks = tasks.map((task, i) =>
+      i === editingIndex ? { ...task, text: editingText } : task
+    );
+    setTasks(updatedTasks);
+    setEditingIndex(null);
+    setEditingText("");
+  };
+
   return (
     <div className="min-h-screen bg-black text-white">
       {showIntro ? (
@@ -56,21 +78,25 @@ function TodoList() {
           <header className="text-3xl font-bold text-center mb-8 text-red-600">
             ToDoFlix
           </header>
-          <div className="bg-gray-800 rounded-lg shadow-lg p-6">
+          <div className="bg-gray-800 rounded-lg shadow-lg p-6 max-w-screen-lg">
             <div className="flex mb-4">
               <input
                 type="text"
                 className="flex-1 p-2 border-none rounded bg-gray-700 text-white focus:ring-2 focus:ring-red-500"
                 placeholder="Add a new task..."
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
+                value={editingIndex !== null ? editingText : newTask}
+                onChange={(e) =>
+                  editingIndex !== null
+                    ? setEditingText(e.target.value)
+                    : setNewTask(e.target.value)
+                }
                 onKeyDown={handleKeyDown}
               />
               <button
-                onClick={addTask}
+                onClick={editingIndex !== null ? saveEditedTask : addTask}
                 className="ml-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
               >
-                Add
+                {editingIndex !== null ? "Save" : "Add"}
               </button>
             </div>
             {tasks.length === 0 ? (
@@ -79,7 +105,7 @@ function TodoList() {
                 <p>Add tasks to begin.</p>
               </div>
             ) : (
-              <ul className="space-y-3">
+              <ul className="space-y-3 max-h-60 overflow-y-auto">
                 {tasks.map((task, index) => (
                   <li
                     key={index}
@@ -87,18 +113,32 @@ function TodoList() {
                   >
                     <span
                       className={`flex-1 cursor-pointer ${
-                          task.completed ? "line-through text-gray-400" : "text-white"
-                        }`}
+                        task.completed
+                          ? "line-through text-gray-400"
+                          : "text-white"
+                      }`}
                       onClick={() => toggleTaskCompletion(index)}
                     >
                       {task.text}
                     </span>
-                    <button
-                      onClick={() => deleteTask(index)}
-                      className="ml-4 px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition"
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => startEditingTask(index)}
+                        className="px-2"
+                      >
+                        <img
+                          src="https://cdn-icons-png.flaticon.com/512/1159/1159633.png"
+                          alt="Edit"
+                          className="w-5 h-5"
+                        />
+                      </button>
+                      <button
+                        onClick={() => deleteTask(index)}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -111,5 +151,3 @@ function TodoList() {
 }
 
 export default TodoList;
-
-
